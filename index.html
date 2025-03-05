@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartBudget</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        /* Existing styles remain the same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5ff;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            height: 100vh;
+            padding: 20px;
+            position: fixed;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            color: #6c5ce7;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-icon {
+            width: 35px;
+            height: 35px;
+            background-color: #6c5ce7;
+            border-radius: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #666;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background-color: #f0f0ff;
+        }
+
+        .nav-item.active {
+            background-color: #6c5ce7;
+            color: white;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            width: calc(100% - 250px);
+        }
+
+        .navbar {
+            background-color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-bar {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .dashboard {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #2d3436;
+            margin-bottom: 1rem;
+        }
+
+        .amount {
+            font-size: 2rem;
+            color: #6c5ce7;
+            margin-bottom: 0.5rem;
+        }
+
+        .change {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #636e72;
+        }
+
+        .increase {
+            color: #00b894;
+        }
+
+        .decrease {
+            color: #d63031;
+        }
+
+        .transaction-form {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2d3436;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .submit-btn {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #5b4cdb;
+        }
+
+        /* New styles for Analytics and History sections */
+        .content-section {
+            display: none;
+            padding: 2rem;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .analytics-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .history-table th, .history-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .history-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .history-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .transaction-type-income {
+            color: #00b894;
+        }
+
+        .transaction-type-expense {
+            color: #d63031;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon"></div>
+            SmartBudget
+        </div>
+        <a href="#" class="nav-item active" data-section="dashboard">
+            📊 Dashboard
+        </a>
+        <a href="#" class="nav-item" data-section="analytics">
+            📈 Analytics
+        </a>
+        <a href="#" class="nav-item" data-section="history">
+            📅 History
+        </a>
+        <a href="#" class="nav-item" data-section="settings">
+            ⚙️ Settings
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <nav class="navbar">
+            <input type="text" class="search-bar" placeholder="Search transactions...">
+        </nav>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="content-section active">
+            <div class="dashboard">
+                <div class="card">
+                    <h2>Total Balance</h2>
+                    <div class="amount" id="totalBalance">₹0.00</div>
+                    <div class="change">
+                        <span id="balanceChange">0%</span> from last month
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Income</h2>
+                    <div class="amount" id="totalIncome">₹0.00</div>
+                    <div class="change">
+                        <span id="incomeChange" class="increase">0%</span> from last month
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Expenses</h2>
+                    <div class="amount" id="totalExpenses">₹0.00</div>
+                    <div class="change">
+                        <span id="expenseChange" class="decrease">0%</span> from last month
+                    </div>
+                </div>
+            </div>
+
+            <div class="transaction-form">
+                <h2>Add Transaction</h2>
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="description" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="type" required>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="category" required>
+                            <option value="transport">Transport</option>
+                            <option value="food">Food</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="salary">Salary</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="submit-btn">Add Transaction</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="content-section">
+            <div class="analytics-container">
+                <div class="chart-container">
+                    <h2>Monthly Overview</h2>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2>Category Distribution</h2>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" class="content-section">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionHistory">
+                    <!-- Transaction history will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="content-section">
+            <!-- Settings content added here -->
+            <div class="card">
+                <h2>SMS Integration Settings</h2>
+                <p>Allow SmartBudget to automatically track transactions from bank SMS messages.</p>
+                <button onclick="requestSMSPermission()" class="submit-btn">
+                    Enable SMS Reading
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store transactions with dates
+        let transactions = {
+            currentMonth: [],
+            lastMonth: [
+                { amount: 5000, type: 'income', description: 'Salary', category: 'salary', date: '2025-01-15' },
+                { amount: 2000, type: 'expense', description: 'Rent', category: 'utilities', date: '2025-01-01' }
+            ]
+        };
+
+        // Calculate totals
+        function calculateTotals(transactionList) {
+            let income = 0;
+            let expenses = 0;
+
+            transactionList.forEach(transaction => {
+                if (transaction.type === 'income') {
+                    income += transaction.amount;
+                } else {
+                    expenses += transaction.amount;
+                }
+            });
+
+            return {
+                income: income,
+                expenses: expenses,
+                balance: income - expenses
+            };
+        }
+
+        // Calculate percentage change
+        function calculatePercentageChange(current, previous) {
+            if (previous === 0) return 0;
+            return ((current - previous) / previous * 100).toFixed(1);
+        }
+
+        // Update display
+        function updateDisplay() {
+            const currentTotals = calculateTotals(transactions.currentMonth);
+            const lastTotals = calculateTotals(transactions.lastMonth);
+
+            // Update amounts
+            document.getElementById('totalBalance').textContent = `₹${currentTotals.balance.toFixed(2)}`;
+            document.getElementById('totalIncome').textContent = `₹${currentTotals.income.toFixed(2)}`;
+            document.getElementById('totalExpenses').textContent = `₹${currentTotals.expenses.toFixed(2)}`;
+
+            // Update percentage changes
+            const balanceChange = calculatePercentageChange(currentTotals.balance, lastTotals.balance);
+            const incomeChange = calculatePercentageChange(currentTotals.income, lastTotals.income);
+            const expenseChange = calculatePercentageChange(currentTotals.expenses, lastTotals.expenses);
+
+            document.getElementById('balanceChange').textContent = `${balanceChange}%`;
+            document.getElementById('incomeChange').textContent = `${incomeChange}%`;
+            document.getElementById('expenseChange').textContent = `${expenseChange}%`;
+
+            // Update history table
+            updateHistory();
+            
+            // Update charts
+            updateCharts();
+        }
+
+        // Update history table
+        function updateHistory() {
+            const historyTable = document.getElementById('transactionHistory');
+            historyTable.innerHTML = '';
+
+            // Combine and sort all transactions by date
+            const allTransactions = [...transactions.currentMonth, ...transactions.lastMonth]
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            allTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${transaction.date}</td>
+                    <td>${transaction.description}</td>
+                    <td>${transaction.category}</td>
+                    <td class="transaction-type-${transaction.type}">${transaction.type}</td>
+                    <td class="transaction-type-${transaction.type}">₹${transaction.amount.toFixed(2)}</td>
+                `;
+                historyTable.appendChild(row);
+            });
+        }
+
+        // Update charts
+        function updateCharts() {
+            // Monthly Overview Chart
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            const currentTotals = calculateTotals(transactions.currentMonth);
+            const lastTotals = calculateTotals(transactions.lastMonth);
+
+            new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Last Month', 'Current Month'],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [lastTotals.income, currentTotals.income],
+                            backgroundColor: '#00b894'
+                        },
+                        {
+                            label: 'Expenses',
+                            data: [lastTotals.expenses, currentTotals.expenses],
+                            backgroundColor: '#d63031'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Category Distribution Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            const categoryData = {};
+            transactions.currentMonth.forEach(transaction => {
+                if (transaction.type === 'expense') {
+                    categoryData[transaction.category] = (categoryData[transaction.category] || 0) + transaction.amount;
+                }
+            });
+
+            new Chart(categoryCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(categoryData),
+                    datasets: [{
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            '#6c5ce7',
+                            '#00b894',
+                            '#ffeaa7',
+                            '#ff7675',
+                            '#74b9ff'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('transactionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const transaction = {
+                amount: Number(document.getElementById('amount').value),
+                description: document.getElementById('description').value,
+                type: document.getElementById('type').value,
+                category: document.getElementById('category').value,
+                date: new Date().toISOString().split('T')[0] // Add current date
+            };
+
+            transactions.currentMonth.push(transaction);
+            updateDisplay();
+
+            // Reset form
+            this.reset();
+        });
+
+        // Navigation functionality
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all nav items and content sections
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Add active class to clicked nav item
+                this.classList.add('active');
+                
+                // Show corresponding content section
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(`${sectionId}-section`).classList.add('active');
+                
+                // Update charts if analytics section is activated
+                if (sectionId === 'analytics') {
+                    updateCharts();
+                }
+            });
+        });
+
+        // Search functionality
+        document.querySelector('.search-bar').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const historyRows = document.querySelectorAll('#transactionHistory tr');
+            
+            historyRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // SMS Permission and Reading Functions
+        async function requestSMSPermission() {
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'sms-receive' });
+                if (permissionStatus.state === 'granted') {
+                    startSMSReading();
+                } else {
+                    console.log('SMS permission not granted');
+                }
+            } catch (error) {
+                console.log('SMS permission API not supported');
+            }
+        }
+
+        function startSMSReading() {
+            if ('sms' in navigator) {
+                navigator.sms.receive()
+                    .then(message => {
+                        const transaction = extractTransactionFromSMS(message.content);
+                        if (transaction) {
+                            transactions.currentMonth.push(transaction);
+                            updateDisplay();
+                        }
+                    })
+                    .catch(error => console.log('Error reading SMS:', error));
+            }
+        }
+
+        function extractTransactionFromSMS(message) {
+            // Pattern for common bank SMS formats
+            // Example: "INR 500.00 credited to your account XXX1234 on 23/02"
+            // Example: "INR 200.00 debited from your account XXX1234 on 23/02"
+            
+            const patterns = {
+                amount: /(?:INR|Rs\.?)\s*(\d+(?:\.\d{2})?)/i,
+                type: /(credited|debited)/i,
+                accountNumber: /account\s*([X\d]+)/i
+            };
+
+            try {
+                const amountMatch = message.match(patterns.amount);
+                const typeMatch = message.match(patterns.type);
+                const accountMatch = message.match(patterns.accountNumber);
+
+                if (amountMatch && typeMatch) {
+                    const amount = parseFloat(amountMatch[1]);
+                    const isCredit = typeMatch[1].toLowerCase() === 'credited';
+                    
+                    return {
+                        amount: amount,
+                        type: isCredit ? 'income' : 'expense',
+                        description: `Auto: ${isCredit ? 'Credit' : 'Debit'} from SMS`,
+                        category: isCredit ? 'salary' : 'utilities',
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                }
+            } catch (error) {
+                console.log('Error parsing SMS:', error);
+            }
+            return null;
+        }
+
+        // Start SMS monitoring when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            requestSMSPermission();
+            updateDisplay();
+        });
+
+    </script>
+</body>
+</html>
